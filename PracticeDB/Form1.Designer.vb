@@ -31,14 +31,14 @@ Partial Class Form1
         Me.txtClaimantName = New System.Windows.Forms.TextBox()
         Me.btnSave = New System.Windows.Forms.Button()
         Me.grdDetail = New System.Windows.Forms.DataGridView()
-        Me.EmployerName = New System.Windows.Forms.DataGridViewTextBoxColumn()
-        Me.PeriodFrom = New System.Windows.Forms.DataGridViewTextBoxColumn()
         Me.btnAdd = New System.Windows.Forms.Button()
         Me.btnEdit = New System.Windows.Forms.Button()
         Me.btnDelete = New System.Windows.Forms.Button()
         Me.DataGridView1 = New System.Windows.Forms.DataGridView()
         Me.DataGridView2 = New System.Windows.Forms.DataGridView()
         Me.Column1 = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.EmployerName = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.PeriodFrom = New System.Windows.Forms.DataGridViewTextBoxColumn()
         CType(Me.grdDetail, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.DataGridView1, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.DataGridView2, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -113,18 +113,6 @@ Partial Class Form1
         Me.grdDetail.Size = New System.Drawing.Size(911, 150)
         Me.grdDetail.TabIndex = 7
         '
-        'EmployerName
-        '
-        Me.EmployerName.HeaderText = "EmployerName"
-        Me.EmployerName.Name = "EmployerName"
-        Me.EmployerName.Width = 300
-        '
-        'PeriodFrom
-        '
-        Me.PeriodFrom.HeaderText = "PeriodTo"
-        Me.PeriodFrom.Name = "PeriodFrom"
-        Me.PeriodFrom.Width = 150
-        '
         'btnAdd
         '
         Me.btnAdd.Location = New System.Drawing.Point(36, 383)
@@ -179,6 +167,18 @@ Partial Class Form1
         Me.Column1.HeaderText = "Column1"
         Me.Column1.Name = "Column1"
         '
+        'EmployerName
+        '
+        Me.EmployerName.HeaderText = "EmployerName"
+        Me.EmployerName.Name = "EmployerName"
+        Me.EmployerName.Width = 300
+        '
+        'PeriodFrom
+        '
+        Me.PeriodFrom.HeaderText = "PeriodFrom"
+        Me.PeriodFrom.Name = "PeriodFrom"
+        Me.PeriodFrom.Width = 150
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
@@ -215,12 +215,12 @@ Partial Class Form1
     Friend WithEvents txtClaimantName As TextBox
     Friend WithEvents btnSave As Button
     Friend WithEvents grdDetail As DataGridView
-    Friend WithEvents EmployerName As DataGridViewTextBoxColumn
-    Friend WithEvents PeriodFrom As DataGridViewTextBoxColumn
     Friend WithEvents btnAdd As Button
     Friend WithEvents btnEdit As Button
     Friend WithEvents btnDelete As Button
     Friend WithEvents DataGridView1 As DataGridView
     Friend WithEvents DataGridView2 As DataGridView
     Friend WithEvents Column1 As DataGridViewTextBoxColumn
+    Friend WithEvents EmployerName As DataGridViewTextBoxColumn
+    Friend WithEvents PeriodFrom As DataGridViewTextBoxColumn
 End Class

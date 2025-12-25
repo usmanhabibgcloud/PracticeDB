@@ -75,19 +75,50 @@ Public Class Form1
                 cmdDel.ExecuteNonQuery()
             End If
 
-            '---------------- INSERT DETAILS ----------------
+
+
+            '-------------------------------Converting DataGrid into Data table---------------------
+
+            Dim tblDetail As New DataTable
+
+            Dim strFldNames As String() = New String() {"EmployerName", "PeriodFrom"}
+
+            For i As Integer = 0 To UBound(strFldNames)
+                tblDetail.Columns.Add(strFldNames(i).ToString)
+            Next
+
+            'For r As Integer = 0 To grdVoucher.RowCount - 2
+            'If Not (grdVoucher.Item("EmployerName", r).Value = Nothing) Then
+
             For Each row As DataGridViewRow In grdDetail.Rows
                 If row.IsNewRow Then Continue For
+
+                tblDetail.Rows.Add()
+                tblDetail.Rows(tblDetail.Rows.Count - 1)("EmployerName") = row.Cells("EmployerName").Value
+                tblDetail.Rows(tblDetail.Rows.Count - 1)("PeriodFrom") = Date.ParseExact(row.Cells("PeriodFrom").Value, "dd-MM-yyyy", Nothing)
+
+            Next
+
+            '---------------------------------------------
+
+            '---------------- INSERT DETAILS ----------------
+
+            For Each row As DataRow In tblDetail.Rows
+
+                ' Optional: skip deleted rows
+                'If row.RowState = DataRowState.Deleted Then Continue For
+
                 Dim cmdDetail As New SqlCommand(
                 "INSERT INTO tblFIRDetail (FIRID, EmployerName, PeriodFrom)
-                 VALUES (@FIRID, @EmployerName, @PeriodFrom)", con, tran)
+                    VALUES (@FIRID, @EmployerName, @PeriodFrom)", con, tran)
 
                 cmdDetail.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-                cmdDetail.Parameters.AddWithValue("@EmployerName", row.Cells("EmployerName").Value)
-                cmdDetail.Parameters.AddWithValue("@PeriodFrom", Date.ParseExact(row.Cells("PeriodFrom").Value, "dd-MM-yyyy", Nothing))
+                cmdDetail.Parameters.AddWithValue("@EmployerName", row("EmployerName").ToString())
+                cmdDetail.Parameters.AddWithValue("@PeriodFrom", row("PeriodFrom").ToString)
 
                 cmdDetail.ExecuteNonQuery()
             Next
+
 
             tran.Commit()
             MessageBox.Show("Record saved successfully")
