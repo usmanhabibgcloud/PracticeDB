@@ -26,7 +26,7 @@ Public Class Form1
     End Sub
     '5. SAVE Button (Insert / Update)
     Dim tblMain As String = "tblFIRMain"
-    Dim tblDetail As String = "tblFIRDetail"
+    Dim tblDetailName As String = "tblFIRDetail"
 
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
@@ -80,22 +80,22 @@ Public Class Form1
             '-------------------------------Converting DataGrid into Data table---------------------
 
             Dim tblDetail As New DataTable
+            tblDetail.Columns.Add("FIRID", GetType(Long))
+            tblDetail.Columns.Add("EmployerName", GetType(String))
+            tblDetail.Columns.Add("PeriodFrom", GetType(Date))
 
-            Dim strFldNames As String() = New String() {"EmployerName", "PeriodFrom"}
-
-            For i As Integer = 0 To UBound(strFldNames)
-                tblDetail.Columns.Add(strFldNames(i).ToString)
-            Next
-
-            'For r As Integer = 0 To grdVoucher.RowCount - 2
-            'If Not (grdVoucher.Item("EmployerName", r).Value = Nothing) Then
+            Debug.Write(tblDetail)
 
             For Each row As DataGridViewRow In grdDetail.Rows
                 If row.IsNewRow Then Continue For
+                Dim dr As DataRow = tblDetail.NewRow()
+                dr("FIRID") = CurrentFIRID
 
-                tblDetail.Rows.Add()
-                tblDetail.Rows(tblDetail.Rows.Count - 1)("EmployerName") = row.Cells("EmployerName").Value
-                tblDetail.Rows(tblDetail.Rows.Count - 1)("PeriodFrom") = Date.ParseExact(row.Cells("PeriodFrom").Value, "dd-MM-yyyy", Nothing)
+
+                dr("EmployerName") = row.Cells("EmployerName").Value.ToString()
+                dr("PeriodFrom") = Date.ParseExact(row.Cells("PeriodFrom").Value.ToString(), "dd-MM-yyyy", Nothing)
+
+                tblDetail.Rows.Add(dr)
 
             Next
 
@@ -107,14 +107,27 @@ Public Class Form1
 
                 ' Optional: skip deleted rows
                 'If row.RowState = DataRowState.Deleted Then Continue For
+                Dim col As String = Nothing
+                Dim colvalues As String = Nothing
+                For cl As Integer = 0 To tblDetail.Columns.Count - 1
+                    col &= tblDetail.Columns(cl).ColumnName & IIf(cl < tblDetail.Columns.Count - 1, ",", "")
+                    colvalues &= "@" & tblDetail.Columns(cl).ColumnName & IIf(cl < tblDetail.Columns.Count - 1, ",", "")
+                Next
 
+                'Debug.WriteLine(col)
                 Dim cmdDetail As New SqlCommand(
-                "INSERT INTO tblFIRDetail (FIRID, EmployerName, PeriodFrom)
-                    VALUES (@FIRID, @EmployerName, @PeriodFrom)", con, tran)
+                "INSERT INTO " & tblDetailName & "(" &
+                col & ")
+                    VALUES (" & colvalues & ")", con, tran)
 
-                cmdDetail.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-                cmdDetail.Parameters.AddWithValue("@EmployerName", row("EmployerName").ToString())
-                cmdDetail.Parameters.AddWithValue("@PeriodFrom", row("PeriodFrom").ToString)
+                For clv As Integer = 0 To tblDetail.Columns.Count - 1
+                    Dim c As String = Nothing
+                    Dim cv As String = Nothing
+
+                    c = tblDetail.Columns(clv).ColumnName
+                    cv = "@" & tblDetail.Columns(clv).ColumnName
+                    cmdDetail.Parameters.AddWithValue(cv, row(c))
+                Next
 
                 cmdDetail.ExecuteNonQuery()
             Next
