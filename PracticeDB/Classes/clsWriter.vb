@@ -157,165 +157,182 @@ AddMode:
 
     End Function
 
-    ''' <param name="tbl">Give the name of Detail  table that you have created</param>
+    ''' <param name="tbl">Give the name of Detail table -data table-that you have created</param>
     ''' <param name="con">Give the Name of Open Connection</param>
-    ''' <param name="fldNames">Field Names of Main Table as String Array</param>
-    ''' <param name="fldValues">Field Values of Main Table as Object Array</param>
-    Public Sub AddRecord(ByVal tbl As DataTable, ByVal con As SqlConnection, ByVal tblDetailName As String, ByVal tblMainName As String, ByVal IDfldName As String, ByVal fldNames As String(), ByVal fldValues As Object())
+    ''' <param name="tblMainFields">Field Names of Main Table as String Array</param>
+    ''' <param name="tblMainValues">Field Values of Main Table as Object Array</param>
+    Public Sub AddRecord(ByVal tbl As DataTable, ByVal con As SqlConnection,
+                         ByVal tblDetailName As String, ByVal tblMainName As String,
+                         ByVal MainTbl_IDFieldName As String, ByVal tblMainFields As String(),
+                         ByVal tblMainValues As Object())
 
-        Dim myString As String = Nothing
-        Dim intVoucherID As Long = Nothing
-        Dim myCmd As New SqlCommand With {
-            .Connection = con
-        }
-        Dim myTran As SqlTransaction = con.BeginTransaction
-        myCmd.Transaction = myTran
-
-        '-----------------Geting the Command Text for Saving the Main Table------------
-
-        myString = "Insert Into " & tblMainName & "("
-        For i As Integer = 0 To UBound(fldNames)
-            myString &= fldNames(i) & IIf(i = UBound(fldNames), ")", ", ")
+        Dim mystring As String = Nothing
+        Dim CurrentID As Long = Nothing
+        Dim myvaluesvar As String = Nothing
+        For i As Integer = 0 To UBound(tblMainFields)
+            mystring &= tblMainFields(i) & IIf(i < UBound(tblMainFields), ", ", " ")
+            myvaluesvar &= "@" & tblMainFields(i) & IIf(i < UBound(tblMainFields), ", ", " ")
         Next
-        myString &= " Values ("
-        For i As Integer = 0 To UBound(fldValues)
-            myString &= "'" & fldValues(i) & IIf(i = UBound(fldValues), "' )", "', ")
-        Next
-        If Not IDfldName Is Nothing Then
-            myString &= " Select Ident_Current('" & tblMainName & "')"
-        End If
+
+        Dim tran As SqlTransaction = con.BeginTransaction()
 
         Try
-            '--------------------Saving Main Table and Getting the Available ID of new Voucher----------
 
-            myCmd.CommandText = myString
-            If Not IDfldName Is Nothing Then
-                intVoucherID = myCmd.ExecuteScalar
-                tbl.Columns.Add(IDfldName, GetType(Long))    'Adding Column for Storing the Voucher ID
-                tbl.Columns(IDfldName.ToString).SetOrdinal(0)
+            '---------------- INSERT tblMain - Add Mode ----------------
+            Dim cmdMain As New SqlCommand(
+                    "INSERT INTO " & tblMainName & " ( " & mystring & " )
+                 VALUES (" & myvaluesvar & ");
+                 SELECT SCOPE_IDENTITY()", con, tran)
 
-                For i As Integer = 0 To tbl.Rows.Count - 1
-                    tbl.Rows(i)(IDfldName.ToString) = intVoucherID
-                Next
-
-            Else
-                myCmd.ExecuteNonQuery()
-            End If
-            myString = Nothing                              'Clearing the Command String for Detail Table
-            myCmd.CommandText = Nothing
-
-            '-------------------Saving The Detail Table--------------------------------------
-
-            For r As Integer = 0 To tbl.Rows.Count - 1
-                myString = "Insert into " & tblDetailName & " ("
-                For i As Integer = 0 To tbl.Columns.Count - 1
-                    myString &= tbl.Columns(i).ColumnName & IIf(i = tbl.Columns.Count - 1, " )", " , ")
-                Next
-                myString &= " Values ("
-                For c As Integer = 0 To tbl.Columns.Count - 1
-                    myString &= "'" & tbl.Rows(r)(c) & IIf(tbl.Columns.Count - 1 = c, "' )", "' ,")
-                Next
-                myCmd.CommandText = myString
-                myCmd.ExecuteScalar()
-                myString = Nothing
-                myCmd.CommandText = Nothing
+            For l As Integer = 0 To UBound(tblMainFields)
+                cmdMain.Parameters.AddWithValue("@" & tblMainFields(l), tblMainValues(l))
             Next
+            CurrentID = Convert.ToInt64(cmdMain.ExecuteScalar())
 
-            myTran.Commit()
+
+            '---------------- INSERT DETAILS ----------------
+
+            For Each row As DataRow In tbl.Rows
+
+                ' Optional: skip deleted rows
+                'If row.RowState = DataRowState.Deleted Then Continue For
+                Dim col As String = MainTbl_IDFieldName & " ,"
+                Dim colvalues As String = "@" & MainTbl_IDFieldName & ","
+                For cl As Integer = 0 To tbl.Columns.Count - 1
+                    col &= tbl.Columns(cl).ColumnName & IIf(cl < tbl.Columns.Count - 1, ",", "")
+                    colvalues &= "@" & tbl.Columns(cl).ColumnName & IIf(cl < tbl.Columns.Count - 1, ",", "")
+                Next
+
+                Dim cmdDetail As New SqlCommand(
+                    "INSERT INTO " & tblDetailName & "(" &
+                    col & ")
+                    VALUES (" & colvalues & ")", con, tran)
+                cmdDetail.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+
+                For clv As Integer = 0 To tbl.Columns.Count - 1
+                    Dim c As String = Nothing
+                    Dim cv As String = Nothing
+
+                    c = tbl.Columns(clv).ColumnName
+                    cv = "@" & tbl.Columns(clv).ColumnName
+                    cmdDetail.Parameters.AddWithValue(cv, row(c))
+                Next
+
+                cmdDetail.ExecuteNonQuery()
+            Next
+            tran.Commit()
             MsgBox("The Record Has Successfully Saved", MsgBoxStyle.Exclamation)
         Catch ex As Exception
-            myTran.Rollback()
+            tran.Rollback()
             MsgBox(ex.Message)
             Exit Sub
         End Try
     End Sub
+    ''' <param name="tbl">Give the name of Detail  table that you have created</param>
+    ''' <param name="con">Give the Name of Open Connection</param>
+    ''' <param name="tblMainFields">Field Names of Main Table as String Array</param>
+    ''' <param name="tblMainValues">Field Values of Main Table as Object Array</param>
 
-    Public Sub UpdateRecord(ByVal tbl As DataTable, ByVal con As SqlConnection, ByVal tblDetailName As String, ByVal tblMainName As String, ByVal IDfldName As String, ByVal fldNames As String(), ByVal fldValues As Object(), ByVal intIDValue As Object, Optional ByVal IsIdFieldString As Boolean = False)
+    Public Sub UpdateRecord(ByVal tbl As DataTable, ByVal con As SqlConnection,
+                            ByVal tblDetailName As String, ByVal tblMainName As String,
+                            ByVal MainTbl_IDFieldName As String, ByVal tblMainFields As String(),
+                            ByVal tblMainValues As Object(), ByVal CurrentID As Long,
+                            Optional ByVal IsIdFieldString As Boolean = False)
 
-        Dim myString As String = Nothing
-        Dim intVoucherID As Long = Nothing
-        Dim myCmd As New SqlCommand With {
-            .Connection = con
-        }
-        Dim myTran As SqlTransaction = con.BeginTransaction
-        myCmd.Transaction = myTran
 
-        '-----------------Geting the Command Text for Updating the Main Table------------
+        '---------------mystring and my values for edit of record-----------------
+        Dim mystring As String = Nothing
+        For i As Integer = 0 To UBound(tblMainFields)
+            mystring &= tblMainFields(i) & " = @" & tblMainFields(i) & IIf(i < UBound(tblMainFields), ", ", " ")
 
-        myString = "Update " & tblMainName & " Set "
-        For i As Integer = 0 To UBound(fldNames)
-            myString &= fldNames(i) & " = '" & fldValues(i) & "' ,"
         Next
-        myString = Strings.Left(myString, Len(myString) - 1)
 
-        If IsIdFieldString = True Then
-            myString &= " Where " & IDfldName & " = '" & intIDValue.ToString & "'"
-            myString &= " Delete " & tblDetailName & " where " & IDfldName & " = '" & intIDValue.ToString & "'"
-        Else
-            myString &= " Where " & IDfldName & " = " & intIDValue
-            myString &= " Delete " & tblDetailName & " where " & IDfldName & " = " & intIDValue
-        End If
 
-        myCmd.CommandText = myString
+        Dim tran As SqlTransaction = con.BeginTransaction()
 
         Try
-            '--------------------Updating Main Table-------------------------------
+            '---------------- UPDATE tblMain  Edit Mode----------------
+            Dim cmdMain As New SqlCommand(
+                    "UPDATE " & tblMainName & " SET  " & mystring &
+                    "WHERE " & MainTbl_IDFieldName & " = @" & MainTbl_IDFieldName, con, tran)
 
-            myCmd.CommandText = myString
-            myCmd.ExecuteScalar()
-            myString = Nothing                              'Clearing the Command String for Detail Table
-            myCmd.CommandText = Nothing
-
-            '-------------------Updating The Detail Table--------------------------------------
-
-            If IsIdFieldString = False Then
-                tbl.Columns.Add(IDfldName, GetType(Long))       'Adding Column for Storing the Voucher ID
-                tbl.Columns(IDfldName.ToString).SetOrdinal(0)
-                For i As Integer = 0 To tbl.Rows.Count - 1
-                    tbl.Rows(i)(IDfldName.ToString) = intIDValue
-                Next
-            End If
-
-
-            For r As Integer = 0 To tbl.Rows.Count - 1
-                myString = "Insert into " & tblDetailName & " ("
-                For i As Integer = 0 To tbl.Columns.Count - 1
-                    myString &= tbl.Columns(i).ColumnName & IIf(i = tbl.Columns.Count - 1, " )", " , ")
-                Next
-                myString &= " Values ("
-                For c As Integer = 0 To tbl.Columns.Count - 1
-                    myString &= "'" & tbl.Rows(r)(c) & IIf(tbl.Columns.Count - 1 = c, "' )", "' ,")
-                Next
-                myCmd.CommandText = myString
-                myCmd.ExecuteScalar()
-                myString = Nothing
-                myCmd.CommandText = Nothing
+            For l As Integer = 0 To UBound(tblMainFields)
+                cmdMain.Parameters.AddWithValue("@" & tblMainFields(l), tblMainValues(l))
             Next
-            myTran.Commit()
-            MsgBox("The Record Has Successfully Updated", MsgBoxStyle.Exclamation)
+            cmdMain.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+            cmdMain.ExecuteNonQuery()
+
+            'Delete old details
+            Dim cmdDel As New SqlCommand("DELETE FROM " & tblDetailName & " WHERE " & MainTbl_IDFieldName & "=@" & MainTbl_IDFieldName, con, tran)
+            cmdDel.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+            cmdDel.ExecuteNonQuery()
+
+
+            '---------------- INSERT DETAILS ----------------
+
+            For Each row As DataRow In tbl.Rows
+
+                ' Optional: skip deleted rows
+                'If row.RowState = DataRowState.Deleted Then Continue For
+                Dim col As String = MainTbl_IDFieldName & " ,"
+                Dim colvalues As String = "@" & MainTbl_IDFieldName & ","
+                For cl As Integer = 0 To tbl.Columns.Count - 1
+                    col &= tbl.Columns(cl).ColumnName & IIf(cl < tbl.Columns.Count - 1, ",", "")
+                    colvalues &= "@" & tbl.Columns(cl).ColumnName & IIf(cl < tbl.Columns.Count - 1, ",", "")
+                Next
+
+                Dim cmdDetail As New SqlCommand(
+                        "INSERT INTO " & tblDetailName & "(" &
+                        col & ")
+                    VALUES (" & colvalues & ")", con, tran)
+                cmdDetail.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+
+                For clv As Integer = 0 To tbl.Columns.Count - 1
+                    Dim c As String = Nothing
+                    Dim cv As String = Nothing
+
+                    c = tbl.Columns(clv).ColumnName
+                    cv = "@" & tbl.Columns(clv).ColumnName
+                    cmdDetail.Parameters.AddWithValue(cv, row(c))
+                Next
+
+                cmdDetail.ExecuteNonQuery()
+            Next
+            tran.Commit()
+            MsgBox("The Record Has Successfully Saved", MsgBoxStyle.Exclamation)
         Catch ex As Exception
-            myTran.Rollback()
+            tran.Rollback()
             MsgBox(ex.Message)
             Exit Sub
+
         End Try
+
     End Sub
 
-    Public Sub DeleteRecord(ByVal tblName As String, ByVal fldID As String, ByVal WhereCriteria As Object, ByVal con As SqlConnection)
-        Dim cmd As New SqlCommand
-        Dim myTran As SqlTransaction = con.BeginTransaction
+    Public Sub DeleteRecord(ByVal tblMainName As String, ByVal tblDetailName As String, ByVal MainTbl_IDFieldName As String, ByVal CurrentID As Long, ByVal con As SqlConnection)
+        Dim tran = con.BeginTransaction()
+
         Try
-            cmd.CommandText = "Delete " & tblName & " Where " & fldID & " = '" & WhereCriteria & "'"
-            cmd.Connection = con
-            cmd.Transaction = myTran
-            cmd.ExecuteNonQuery()
-            myTran.Commit()
-            MsgBox(" The Record Has Deleted")
-        Catch ex As Exception
-            myTran.Rollback()
-            MsgBox(ex.Message)
-        End Try
-    End Sub
+            '-------------deleting the detail table values against given currentID-------
+            Dim cmdDelDetail As New SqlCommand("DELETE FROM " & tblDetailName & " WHERE " & MainTbl_IDFieldName & "=@" & MainTbl_IDFieldName, con, tran)
+            cmdDelDetail.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+            cmdDelDetail.ExecuteNonQuery()
 
+            '-------------deleting the Main table values against given currentID-------
+            Dim cmdDelMain As New SqlCommand("DELETE FROM " & tblMainName & " WHERE " & MainTbl_IDFieldName & "=@" & MainTbl_IDFieldName, con, tran)
+            cmdDelMain.Parameters.AddWithValue("@" & MainTbl_IDFieldName, CurrentID)
+            cmdDelMain.ExecuteNonQuery()
+
+            tran.Commit()
+
+            MsgBox(" The Record Has Deleted")
+
+        Catch ex As Exception
+            tran.Rollback()
+            MessageBox.Show(ex.Message)
+        End Try
+
+    End Sub
     Public Sub AddRecord(ByVal tblMainName As String, ByVal fldNames As String(), ByVal fldValues As Object(), ByVal con As SqlConnection)
 
         Dim myString As String = Nothing

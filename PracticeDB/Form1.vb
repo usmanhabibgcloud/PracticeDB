@@ -6,7 +6,8 @@ Imports System.Data.SqlClient
 Public Class Form1
 
     Dim con As New SqlConnection("server=" & "DESKTOP-HOQPMQC" & ";database=PracticeDB;user=sa;pwd=disaster;Connect Timeout=200; pooling='true'; Max Pool Size=200")
-    Dim CurrentFIRID As Long = 0
+    Dim CurrentID As Long = 0
+
     Dim IsEditMode As Boolean = False
 
     '4. ADD Button (New Record)
@@ -14,7 +15,7 @@ Public Class Form1
     Private Sub btnAdd_Click(sender As Object, e As EventArgs) Handles btnAdd.Click
         ClearForm()
         IsEditMode = False
-        CurrentFIRID = 0
+        CurrentID = 0
     End Sub
 
     Private Sub ClearForm()
@@ -25,138 +26,69 @@ Public Class Form1
         grdDetail.Rows.Clear()
     End Sub
     '5. SAVE Button (Insert / Update)
-    Dim tblMain As String = "tblFIRMain"
-    Dim tblDetailName As String = "tblFIRDetail"
 
+    Dim tblMainName As String = "tblFIRMain"
+    Dim tblDetailName As String = "tblFIRDetail"
+    Dim MainTbl_IDFieldName As String = "FIRID"
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
 
-        con.Open()
-        Dim tran As SqlTransaction = con.BeginTransaction()
+        '-------------------------------Converting DataGrid into Data table---------------------
+
+        Dim tblDetail As New DataTable
+
+        tblDetail.Columns.Add("EmployerName", GetType(String))
+        tblDetail.Columns.Add("PeriodFrom", GetType(Date))
+
+        For Each row As DataGridViewRow In grdDetail.Rows
+            If row.IsNewRow Then Continue For
+            Dim dr As DataRow = tblDetail.NewRow()  'dr = data row
+
+            dr("EmployerName") = row.Cells("EmployerName").Value.ToString()
+            dr("PeriodFrom") = Date.ParseExact(row.Cells("PeriodFrom").Value.ToString(), "dd-MM-yyyy", Nothing)
+
+            tblDetail.Rows.Add(dr)
+
+        Next
+
+
+        'Dim tran As SqlTransaction = con.BeginTransaction()
         Dim tblMainFields() As String = {"FIRNo", "FIRDate", "ClaimantName"}
         Dim tblMainValues() As Object = {txtFIRNo.Text, Date.ParseExact(txtFIRDate.Text, "dd-MM-yyyy", Nothing), txtClaimantName.Text}
 
+        con.Open()
 
+        If IsEditMode = False Then
 
-        Dim mystring As String = Nothing
-        Dim myvaluesvar As String = Nothing
-        For i As Integer = 0 To UBound(tblMainFields)
-            mystring &= tblMainFields(i) & IIf(i < UBound(tblMainFields), ", ", " ")
-            myvaluesvar &= "@" & tblMainFields(i) & IIf(i < UBound(tblMainFields), ", ", " ")
-        Next
-
-        Try
-            If IsEditMode = False Then
-                '---------------- INSERT MASTER ----------------
-                Dim cmdMain As New SqlCommand(
-                "INSERT INTO " & tblMain & " ( " & mystring & " )
-                 VALUES (" & myvaluesvar & ");
-                 SELECT SCOPE_IDENTITY()", con, tran)
-
-                For l As Integer = 0 To UBound(tblMainFields)
-                    cmdMain.Parameters.AddWithValue("@" & tblMainFields(l), tblMainValues(l))
-                Next
-                CurrentFIRID = Convert.ToInt64(cmdMain.ExecuteScalar())
-            Else
-                '---------------- UPDATE MASTER ----------------
-                Dim cmdMain As New SqlCommand(
-                "UPDATE tblFIRMain SET  FIRNo=@FIRNo, FIRDate=@FIRDate, ClaimantName=@ClaimantName 
-                 WHERE FIRID=@FIRID", con, tran)
-
-                cmdMain.Parameters.AddWithValue("@FIRNo", txtFIRNo.Text)
-                cmdMain.Parameters.AddWithValue("@FIRDate", Date.ParseExact(txtFIRDate.Text, "dd-MM-yyyy", Nothing))
-                cmdMain.Parameters.AddWithValue("@ClaimantName", txtClaimantName.Text)
-                cmdMain.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-                cmdMain.ExecuteNonQuery()
-
-                'Delete old details
-                Dim cmdDel As New SqlCommand("DELETE FROM tblFIRDetail WHERE FIRID=@FIRID", con, tran)
-                cmdDel.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-                cmdDel.ExecuteNonQuery()
-            End If
-
-
-
-            '-------------------------------Converting DataGrid into Data table---------------------
-
-            Dim tblDetail As New DataTable
-            tblDetail.Columns.Add("FIRID", GetType(Long))
-            tblDetail.Columns.Add("EmployerName", GetType(String))
-            tblDetail.Columns.Add("PeriodFrom", GetType(Date))
-
-            Debug.Write(tblDetail)
-
-            For Each row As DataGridViewRow In grdDetail.Rows
-                If row.IsNewRow Then Continue For
-                Dim dr As DataRow = tblDetail.NewRow()
-                dr("FIRID") = CurrentFIRID
-
-
-                dr("EmployerName") = row.Cells("EmployerName").Value.ToString()
-                dr("PeriodFrom") = Date.ParseExact(row.Cells("PeriodFrom").Value.ToString(), "dd-MM-yyyy", Nothing)
-
-                tblDetail.Rows.Add(dr)
-
-            Next
-
-            '---------------------------------------------
-
-            '---------------- INSERT DETAILS ----------------
-
-            For Each row As DataRow In tblDetail.Rows
-
-                ' Optional: skip deleted rows
-                'If row.RowState = DataRowState.Deleted Then Continue For
-                Dim col As String = Nothing
-                Dim colvalues As String = Nothing
-                For cl As Integer = 0 To tblDetail.Columns.Count - 1
-                    col &= tblDetail.Columns(cl).ColumnName & IIf(cl < tblDetail.Columns.Count - 1, ",", "")
-                    colvalues &= "@" & tblDetail.Columns(cl).ColumnName & IIf(cl < tblDetail.Columns.Count - 1, ",", "")
-                Next
-
-                'Debug.WriteLine(col)
-                Dim cmdDetail As New SqlCommand(
-                "INSERT INTO " & tblDetailName & "(" &
-                col & ")
-                    VALUES (" & colvalues & ")", con, tran)
-
-                For clv As Integer = 0 To tblDetail.Columns.Count - 1
-                    Dim c As String = Nothing
-                    Dim cv As String = Nothing
-
-                    c = tblDetail.Columns(clv).ColumnName
-                    cv = "@" & tblDetail.Columns(clv).ColumnName
-                    cmdDetail.Parameters.AddWithValue(cv, row(c))
-                Next
-
-                cmdDetail.ExecuteNonQuery()
-            Next
-
-
-            tran.Commit()
-            MessageBox.Show("Record saved successfully")
-
-        Catch ex As Exception
-            tran.Rollback()
-            MessageBox.Show(ex.Message)
-        Finally
+            Dim cls As New ClsWriter
+            cls.AddRecord(tblDetail, con, "tblFIRDetail", "tblFIRMain", "FIRID", tblMainFields, tblMainValues)
             con.Close()
-        End Try
+
+            Exit Sub
+
+        Else
+
+            Dim cls As New ClsWriter
+            cls.UpdateRecord(tblDetail, con, "tblFIRDetail", "tblFIRMain", "FIRID", tblMainFields, tblMainValues, CurrentID)
+            con.Close()
+            Exit Sub
+
+        End If
     End Sub
 
     '6. EDIT Button (Load Record)
 
     Private Sub btnEdit_Click(sender As Object, e As EventArgs) Handles btnEdit.Click
         'Assume FIRID is selected from another form or textbox
-        Dim firIdToEdit As Long = InputBox("Enter FIRID")
+        Dim IdFieldToEdit As Long = InputBox("Enter FIRID")
 
         con.Open()
         IsEditMode = True
-        CurrentFIRID = firIdToEdit
+        CurrentID = IdFieldToEdit
 
         'Load Master
         Dim cmdMain As New SqlCommand("SELECT * FROM tblFIRMain WHERE FIRID=@FIRID", con)
-        cmdMain.Parameters.AddWithValue("@FIRID", firIdToEdit)
+        cmdMain.Parameters.AddWithValue("@FIRID", IdFieldToEdit)
         Dim rdr = cmdMain.ExecuteReader()
 
         If rdr.Read() Then
@@ -170,7 +102,7 @@ Public Class Form1
         'Load Detail
         grdDetail.Rows.Clear()
         Dim cmdDetail As New SqlCommand("SELECT * FROM tblFIRDetail WHERE FIRID=@FIRID", con)
-        cmdDetail.Parameters.AddWithValue("@FIRID", firIdToEdit)
+        cmdDetail.Parameters.AddWithValue("@FIRID", IdFieldToEdit)
         rdr = cmdDetail.ExecuteReader()
 
         While rdr.Read()
@@ -194,27 +126,12 @@ Public Class Form1
         If MessageBox.Show("Are you sure?", "Confirm", MessageBoxButtons.YesNo) = DialogResult.No Then Exit Sub
 
         con.Open()
-        Dim tran = con.BeginTransaction()
+        Dim cls As New ClsWriter
+        cls.DeleteRecord("tblFIRMain", "tblFIRDetail", "FIRID", CurrentID, con)
+        ClearForm()
 
-        Try
-            Dim cmdDetail As New SqlCommand("DELETE FROM tblFIRDetail WHERE FIRID=@FIRID", con, tran)
-            cmdDetail.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-            cmdDetail.ExecuteNonQuery()
+        con.Close()
 
-            Dim cmdMain As New SqlCommand("DELETE FROM tblFIRMain WHERE FIRID=@FIRID", con, tran)
-            cmdMain.Parameters.AddWithValue("@FIRID", CurrentFIRID)
-            cmdMain.ExecuteNonQuery()
-
-            tran.Commit()
-            ClearForm()
-            MessageBox.Show("Record deleted")
-
-        Catch ex As Exception
-            tran.Rollback()
-            MessageBox.Show(ex.Message)
-        Finally
-            con.Close()
-        End Try
     End Sub
 
 End Class

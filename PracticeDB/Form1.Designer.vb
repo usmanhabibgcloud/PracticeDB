@@ -22,7 +22,6 @@ Partial Class Form1
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
-        Dim DataGridViewCellStyle1 As System.Windows.Forms.DataGridViewCellStyle = New System.Windows.Forms.DataGridViewCellStyle()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
@@ -31,17 +30,12 @@ Partial Class Form1
         Me.txtClaimantName = New System.Windows.Forms.TextBox()
         Me.btnSave = New System.Windows.Forms.Button()
         Me.grdDetail = New System.Windows.Forms.DataGridView()
+        Me.EmployerName = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.PeriodFrom = New System.Windows.Forms.DataGridViewTextBoxColumn()
         Me.btnAdd = New System.Windows.Forms.Button()
         Me.btnEdit = New System.Windows.Forms.Button()
         Me.btnDelete = New System.Windows.Forms.Button()
-        Me.DataGridView1 = New System.Windows.Forms.DataGridView()
-        Me.DataGridView2 = New System.Windows.Forms.DataGridView()
-        Me.Column1 = New System.Windows.Forms.DataGridViewTextBoxColumn()
-        Me.EmployerName = New System.Windows.Forms.DataGridViewTextBoxColumn()
-        Me.PeriodFrom = New System.Windows.Forms.DataGridViewTextBoxColumn()
         CType(Me.grdDetail, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.DataGridView1, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.DataGridView2, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'Label1
@@ -113,6 +107,18 @@ Partial Class Form1
         Me.grdDetail.Size = New System.Drawing.Size(911, 150)
         Me.grdDetail.TabIndex = 7
         '
+        'EmployerName
+        '
+        Me.EmployerName.HeaderText = "EmployerName"
+        Me.EmployerName.Name = "EmployerName"
+        Me.EmployerName.Width = 300
+        '
+        'PeriodFrom
+        '
+        Me.PeriodFrom.HeaderText = "PeriodFrom"
+        Me.PeriodFrom.Name = "PeriodFrom"
+        Me.PeriodFrom.Width = 150
+        '
         'btnAdd
         '
         Me.btnAdd.Location = New System.Drawing.Point(36, 383)
@@ -140,52 +146,11 @@ Partial Class Form1
         Me.btnDelete.Text = "Delete"
         Me.btnDelete.UseVisualStyleBackColor = True
         '
-        'DataGridView1
-        '
-        Me.DataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.DataGridView1.Location = New System.Drawing.Point(85, 446)
-        Me.DataGridView1.Name = "DataGridView1"
-        Me.DataGridView1.RowTemplate.Height = 24
-        Me.DataGridView1.Size = New System.Drawing.Size(240, 150)
-        Me.DataGridView1.TabIndex = 11
-        '
-        'DataGridView2
-        '
-        Me.DataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.DataGridView2.Columns.AddRange(New System.Windows.Forms.DataGridViewColumn() {Me.Column1})
-        Me.DataGridView2.Location = New System.Drawing.Point(572, 54)
-        Me.DataGridView2.Name = "DataGridView2"
-        Me.DataGridView2.RowTemplate.Height = 24
-        Me.DataGridView2.Size = New System.Drawing.Size(214, 59)
-        Me.DataGridView2.TabIndex = 12
-        '
-        'Column1
-        '
-        DataGridViewCellStyle1.Format = "d"
-        DataGridViewCellStyle1.NullValue = Nothing
-        Me.Column1.DefaultCellStyle = DataGridViewCellStyle1
-        Me.Column1.HeaderText = "Column1"
-        Me.Column1.Name = "Column1"
-        '
-        'EmployerName
-        '
-        Me.EmployerName.HeaderText = "EmployerName"
-        Me.EmployerName.Name = "EmployerName"
-        Me.EmployerName.Width = 300
-        '
-        'PeriodFrom
-        '
-        Me.PeriodFrom.HeaderText = "PeriodFrom"
-        Me.PeriodFrom.Name = "PeriodFrom"
-        Me.PeriodFrom.Width = 150
-        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(1084, 450)
-        Me.Controls.Add(Me.DataGridView2)
-        Me.Controls.Add(Me.DataGridView1)
         Me.Controls.Add(Me.btnDelete)
         Me.Controls.Add(Me.btnEdit)
         Me.Controls.Add(Me.btnAdd)
@@ -200,8 +165,6 @@ Partial Class Form1
         Me.Name = "Form1"
         Me.Text = "Form1"
         CType(Me.grdDetail, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.DataGridView1, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.DataGridView2, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -218,9 +181,6 @@ Partial Class Form1
     Friend WithEvents btnAdd As Button
     Friend WithEvents btnEdit As Button
     Friend WithEvents btnDelete As Button
-    Friend WithEvents DataGridView1 As DataGridView
-    Friend WithEvents DataGridView2 As DataGridView
-    Friend WithEvents Column1 As DataGridViewTextBoxColumn
     Friend WithEvents EmployerName As DataGridViewTextBoxColumn
     Friend WithEvents PeriodFrom As DataGridViewTextBoxColumn
 End Class
